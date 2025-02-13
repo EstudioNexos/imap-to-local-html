@@ -135,7 +135,7 @@ def humansize(nbytes):
     return '%s %s' % (f, suffixes[i])
 
 
-def simplifyEmailHeader(header):
+def simplify_emailheaders(header):
     """
     Tries to minimize email header
     """

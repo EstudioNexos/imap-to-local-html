@@ -3,7 +3,7 @@ import click
 import yaml
 import getpass
 
-# from .utils import normalize, removeDir, copyDir, humansize, simplifyEmailHeader, slugify_safe, strftime
+# from .utils import normalize, removeDir, copyDir, humansize, simplify_emailheaders, slugify_safe, strftime
 from .mailutils import *
 from .templating import build_templates
 
@@ -24,6 +24,7 @@ def prepare_dirs(settings):
     settings['maildir_result'] = "%s/html" % settings['maildir']
     if not os.path.exists(settings['maildir_result']):
         os.mkdir(settings['maildir_result'])
+
     return settings
 
 def print_mailfolders(allFolders, currentParent = '', intend = '  '):
@@ -97,13 +98,15 @@ def walk_mailfolders(settings, mail, mailfolders):
 def archive(config, output):
     """Initialize config."""
     assets_location = "assets"
+    templates_location = "templates"
     settings = yaml.safe_load(config)
     current_dir = os.path.dirname(os.path.realpath(__file__))
     for setting in settings:
-        setting['assets_location'] = assets_location
+        setting['assets_location'] = "{}/{}/".format(current_dir, assets_location)
+        setting['templates_location'] = "{}/{}/".format(current_dir, templates_location)
         setting['output'] = output
         setting['current_dir'] = current_dir
-        setting['templates_location'] = current_dir + "/templates/"
+
         setting = prepare_dirs(setting)
         # print(setting)
         # mail = None

@@ -21,7 +21,7 @@
     <div class="row">
         <nav class="col-md-4 d-none d-md-block col-lg-2 bg-light sidebar">
           <div class="sidebar-sticky">
-            {{ sideMenu }}
+            {{ sidemenu }}
           </div>
         </nav>
     
