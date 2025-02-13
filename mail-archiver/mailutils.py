@@ -6,7 +6,7 @@ import re
 import sys
 import time
 
-from utils import normalize
+from .utils import normalize
 
 
 def connectToImapMailbox(IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
@@ -26,6 +26,63 @@ def connectToImapMailbox(IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
 
     return mail
 
+def getMailFolders(settings, mails = None, mailFolders = None):
+    """
+    Returns mail folders
+    """
+    # global mailFolders
+    # global server
+
+    if not mailFolders is None:
+        return mailFolders
+
+    if not mail:
+        return mailFolders
+
+    mailFolders = {}
+    maillist, folderSeparator = getAllFolders(mail)
+    count = 0
+    for folderID in maillist:
+        count += 1
+
+        # TODO, if separator is part of the name, multiple levels arise (that do not exist)
+        parts = folderID.split(folderSeparator)
+
+        fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folderID, "utf7"), defaultVal="folder"))
+
+        isSelected = False
+        for selectedFolder in settings.get('folders'):
+            if re.search("^" + selectedFolder + "$", folderID):
+                isSelected = True
+                break
+
+        mailFolders[folderID] = {
+            "id": folderID,
+            "title": normalize(parts[len(parts) - 1], "utf7"),
+            "parent": folderSeparator.join(parts[:-1]),
+            "selected": '--all' in settings.get('folders') or isSelected,
+            "file": fileName,
+            "link": "/%s" % fileName,
+        }
+
+    # Single root folders do not matter really - usually it's just "INBOX"
+    # Let's see how many menus exist with no parent
+    menusWithNoParent = []
+    for menu in mailFolders:
+        if mailFolders[menu]["parent"] == "":
+            menusWithNoParent.append(menu)
+
+    # None found or more than one, go home
+    if len(menusWithNoParent) == 1:
+        # We remove it
+        del mailFolders[menusWithNoParent[0]]
+
+        # We change fatherhood for all children
+        for menu in mailFolders:
+            if mailFolders[menu]["parent"] == menusWithNoParent[0]:
+                mailFolders[menu]["parent"] = ""
+
+    return mailFolders
 
 def getAllFolders(mail):
     """
@@ -73,7 +130,6 @@ def saveToMaildir(msg, mailFolder, maildir_raw):
             message_date_epoch = time.mktime((2000, 1, 1, 1, 1, 1, 1, 1, 0))
         maildir_message.set_date(message_date_epoch)
         maildir_message.add_flag("s")
-
 
     finally:
         folder.unlock()

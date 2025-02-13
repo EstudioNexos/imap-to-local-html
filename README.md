@@ -99,7 +99,7 @@ New in version 2:
 
 Clone `imap-to-local-html.sample.yml` to `imap-to-local-html.yml` and edit appropriately:
 ```yaml
-settings:
+-:
   domain: imap-domain-name
   username: login-username
   # password is optional, if not provided, it will be requested during execution
@@ -128,12 +128,15 @@ If you use gmail and want to backup all your email, use the "[Gmail]/All Mail" f
     1. Create one with python 3.x, for example `python3 -m venv env`
     2. Get into it, for example `. env/bin/activate`
     3. Install dependencies from `requirements.txt`, for example `pip install -r requirements.txt`
-    4. Execute main program, for example `python imap-to-local-html.py`
+    4. Execute main program, for example `poetry run archive samples/imap-to-local-html.sample.yml /home/aavvmadrid-archivo/htdocs/output/`
     5. Get out from the virtual environment, for example `deactivate`
 
 4. Execute the script:
 
-    `python ./imap-to-local-html.py`
+    `poetry run archive samples/imap-to-local-html.sample.yml /home/aavvmadrid-archivo/htdocs/output/`
+  
+  First argument is path to yaml file with config.
+  Second argument is path to directory output for archived mailboxes.
 
 5. Browse the generated backup:
 

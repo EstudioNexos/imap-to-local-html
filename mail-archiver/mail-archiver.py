@@ -35,7 +35,7 @@ import sys
 import yaml
 
 from utils import normalize, removeDir, copyDir, humansize, simplifyEmailHeader, slugify_safe, strftime
-import remote2local
+import mailutils
 
 global server
 
@@ -279,63 +279,6 @@ def renderThread(mailsPerID = {}, threadCurrentMailID = '', currentlySelectedMai
     return renderTemplate("thread-ul.tpl", None, mailToShow=mailToShow, linkPrefix=linkPrefix)
 
 
-def getMailFolders():
-    """
-    Returns mail folders
-    """
-    global mailFolders
-    global server
-
-    if not mailFolders is None:
-        return mailFolders
-
-    if not mail:
-        return mailFolders
-
-    mailFolders = {}
-    maillist, folderSeparator = remote2local.getAllFolders(mail)
-    count = 0
-    for folderID in maillist:
-        count += 1
-
-        # TODO, if separator is part of the name, multiple levels arise (that do not exist)
-        parts = folderID.split(folderSeparator)
-
-        fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folderID, "utf7"), defaultVal="folder"))
-
-        isSelected = False
-        for selectedFolder in server.get('folders'):
-            if re.search("^" + selectedFolder + "$", folderID):
-                isSelected = True
-                break
-
-        mailFolders[folderID] = {
-            "id": folderID,
-            "title": normalize(parts[len(parts) - 1], "utf7"),
-            "parent": folderSeparator.join(parts[:-1]),
-            "selected": '--all' in server.get('folders') or isSelected,
-            "file": fileName,
-            "link": "/%s" % fileName,
-        }
-
-    # Single root folders do not matter really - usually it's just "INBOX"
-    # Let's see how many menus exist with no parent
-    menusWithNoParent = []
-    for menu in mailFolders:
-        if mailFolders[menu]["parent"] == "":
-            menusWithNoParent.append(menu)
-
-    # None found or more than one, go home
-    if len(menusWithNoParent) == 1:
-        # We remove it
-        del mailFolders[menusWithNoParent[0]]
-
-        # We change fatherhood for all children
-        for menu in mailFolders:
-            if mailFolders[menu]["parent"] == menusWithNoParent[0]:
-                mailFolders[menu]["parent"] = ""
-
-    return mailFolders
 
 
 attCount = 0
@@ -716,7 +659,7 @@ imapPassword = server.get('password')
 if not imapPassword:
     imapPassword = getpass.getpass()
 
-mail = remote2local.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword, server.get('ssl', True))
+mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword, server.get('ssl', True))
 printImapFolders()
 
 allFolders = getMailFolders()
@@ -728,24 +671,24 @@ for folderID in allFolders:
     retries = 0
     if server.get('ssl', True):
         try:
-            remote2local.getMessageToLocalDir(folderID, mail, maildir_raw)
+            mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
         except imaplib.IMAP4_SSL.abort:
             if retries < 5:
                 print(("SSL Connection Abort. Trying again (#%i).") % retries)
                 retries += 1
-                mail = remote2local.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword, server.get('ssl', True))
-                remote2local.getMessageToLocalDir(folderID, mail, maildir_raw)
+                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword, server.get('ssl', True))
+                mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
             else:
                 print("SSL Connection gave more than 5 errors. Not trying again")
     else:
         try:
-            remote2local.getMessageToLocalDir(folderID, mail, maildir_raw)
+            mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
         except imaplib.IMAP4.abort:
             if retries < 5:
                 print(("Connection Abort. Trying again (#%i).") % retries)
                 retries += 1
-                mail = remote2local.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword)
-                remote2local.getMessageToLocalDir(folderID, mail, maildir_raw)
+                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword)
+                mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
             else:
                 print("Connection gave more than 5 errors. Not trying again")
 
