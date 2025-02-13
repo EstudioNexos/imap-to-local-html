@@ -6,17 +6,25 @@ import re
 import sys
 import time
 
-from .utils import normalize
+from .utils import normalize, slugify_safe
 
+def extract_date(email):
+    date = email.get('Date')
+    return parsedate(date)
 
-def connectToImapMailbox(IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
+def connectToImapMailbox( IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
     """
     Connects to remote server
     """
     if IMAP_SSL is True:
         mail = imaplib.IMAP4_SSL(IMAP_SERVER)
-    if IMAP_SSL is False:
+    else:
         mail = imaplib.IMAP4(IMAP_SERVER)
+    if IMAP_SSL == 'starttls':
+        mail.starttls()
+    print(IMAP_SERVER)
+    print(IMAP_USERNAME)
+    print(IMAP_PASSWORD)
     mail.login(IMAP_USERNAME, IMAP_PASSWORD)
 
     try:
@@ -26,7 +34,7 @@ def connectToImapMailbox(IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
 
     return mail
 
-def getMailFolders(settings, mails = None, mailFolders = None):
+def getMailFolders(settings, mail = None, mailFolders = None):
     """
     Returns mail folders
     """

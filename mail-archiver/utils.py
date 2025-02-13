@@ -159,6 +159,7 @@ def simplifyEmailHeader(header):
     return result
 
 
+
 def slugify_safe(val, defaultVal = '', maxSize = 50):
     """
     Wraps slugify function in cases result is way too big

@@ -25,6 +25,70 @@ def prepare_dirs(settings):
         os.mkdir(settings['maildir_result'])
     return settings
 
+def printMailFolders(allFolders, currentParent = '', intend = '  '):
+    """
+    Prints list of folders
+    """
+
+    if not currentParent:
+        print("All folders")
+
+    for folderID in allFolders:
+        folder = allFolders[folderID]
+        if folder["parent"] != currentParent:
+            continue
+
+        if allFolders[folderID]["selected"]:
+            print("%s**%s (%s)" % (intend, allFolders[folderID]["title"], folderID))
+        else:
+            print("%s%s (%s)" % (intend, allFolders[folderID]["title"], folderID))
+        printMailFolders(allFolders, folderID, intend + "    ")
+
+def walkMailFolders(settings, mail, mailfolders):
+    for folderID in mailfolders:
+        if not mailfolders[folderID]["selected"]:
+            continue
+
+        print(("Getting messages from server from folder: %s.") % normalize(folderID, "utf7"))
+        retries = 0
+        getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+
+        # try:
+        # except imaplib.IMAP4_SSL.abort:
+        #     if retries < 5:
+        #         print(("SSL Connection Abort. Trying again (#%i).") % retries)
+        #         retries += 1
+        #         mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imapPassword, settings.get('ssl', True))
+        #         mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #     else:
+        #         print("SSL Connection gave more than 5 errors. Not trying again")
+
+
+        # if settings.get('ssl', True):
+        #     try:
+        #         mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #     except imaplib.IMAP4_SSL.abort:
+        #         if retries < 5:
+        #             print(("SSL Connection Abort. Trying again (#%i).") % retries)
+        #             retries += 1
+        #             mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imapPassword, settings.get('ssl', True))
+        #             mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #         else:
+        #             print("SSL Connection gave more than 5 errors. Not trying again")
+        # else:
+        #     try:
+        #         mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #     except imaplib.IMAP4.abort:
+        #         if retries < 5:
+        #             print(("Connection Abort. Trying again (#%i).") % retries)
+        #             retries += 1
+        #             mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imapPassword)
+        #             mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #         else:
+        #             print("Connection gave more than 5 errors. Not trying again")
+
+        print(("Done with folder: %s.") % normalize(folderID, "utf7"))
+
 
 @click.command()
 @click.argument('config', type=click.File('rb'))
@@ -37,7 +101,7 @@ def archive(config, output):
         setting['assets_location'] = assets_location
         setting['output'] = output
         setting = prepare_dirs(setting)
-        print(setting)
+        # print(setting)
         mail = None
         mailFolders = None
         
@@ -45,16 +109,20 @@ def archive(config, output):
         lastAttName = ""
         att_count = 0
         last_att_filename = ""
+
         welcomeBanner()
+
         imapPassword = setting.get('password')
         if not imapPassword:
             click.echo(click.style("Enter {} @ {} password".format(setting.get('username'), setting.get('domain')), fg='red'))
             imapPassword = getpass.getpass()
 
-        mail = mailutils.connectToImapMailbox(setting.get('domain'), setting.get('username'), imapPassword, setting.get('ssl', True))
-        mailfolders = mailutils.getMailFolders(setting, mail)
-        print(mailfolders);
+        mail = connectToImapMailbox(setting.get('domain'), setting.get('username'), imapPassword, setting.get('ssl', True))
+        mailfolders = getMailFolders(setting, mail)
+        printMailFolders(mailfolders)
+        walkMailFolders(setting, mail, mailfolders)
         # printImapFolders()
+        renderIndexPage()
 
 if __name__ == '__main__':
     archive()
