@@ -1,6 +1,6 @@
-{% for folderID in mail.folders %}
+{% for folder_id in mail.folders %}
   <div class="col-sm-12 text-right no-padding">
-    {{ folderID|renderFolderBreadcrump(linkPrefix) }}
+    {{ folder_id|render_breadcrumbs(linkPrefix) }}
   </div>
 {% endfor %}
 

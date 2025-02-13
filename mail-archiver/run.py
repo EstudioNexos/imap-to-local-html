@@ -3,8 +3,9 @@ import click
 import yaml
 import getpass
 
-from .utils import normalize, removeDir, copyDir, humansize, simplifyEmailHeader, slugify_safe, strftime
+# from .utils import normalize, removeDir, copyDir, humansize, simplifyEmailHeader, slugify_safe, strftime
 from .mailutils import *
+from .templating import build_templates
 
 def welcomeBanner():
     click.echo(click.style("### Welcome to Mail Archiver ###", fg='blue'))
@@ -13,7 +14,7 @@ def welcomeBanner():
 
 
 def prepare_dirs(settings):
-    settings['maildir'] = '%s/mailbox.%s@%s' % (settings.get('output'), settings.get('username'), settings.get('domain'))
+    settings['maildir'] = settings.get('output') + '%s@%s' % (settings.get('username'), settings.get('domain'))
     if not os.path.exists(settings['maildir']):
         os.mkdir(settings['maildir'])
     settings['maildir_raw'] = "%s/raw" % settings['maildir']
@@ -25,7 +26,7 @@ def prepare_dirs(settings):
         os.mkdir(settings['maildir_result'])
     return settings
 
-def printMailFolders(allFolders, currentParent = '', intend = '  '):
+def print_mailfolders(allFolders, currentParent = '', intend = '  '):
     """
     Prints list of folders
     """
@@ -33,61 +34,61 @@ def printMailFolders(allFolders, currentParent = '', intend = '  '):
     if not currentParent:
         print("All folders")
 
-    for folderID in allFolders:
-        folder = allFolders[folderID]
+    for folder_id in allFolders:
+        folder = allFolders[folder_id]
         if folder["parent"] != currentParent:
             continue
 
-        if allFolders[folderID]["selected"]:
-            print("%s**%s (%s)" % (intend, allFolders[folderID]["title"], folderID))
+        if allFolders[folder_id]["selected"]:
+            print("%s**%s (%s)" % (intend, allFolders[folder_id]["title"], folder_id))
         else:
-            print("%s%s (%s)" % (intend, allFolders[folderID]["title"], folderID))
-        printMailFolders(allFolders, folderID, intend + "    ")
+            print("%s%s (%s)" % (intend, allFolders[folder_id]["title"], folder_id))
+        print_mailfolders(allFolders, folder_id, intend + "    ")
 
-def walkMailFolders(settings, mail, mailfolders):
-    for folderID in mailfolders:
-        if not mailfolders[folderID]["selected"]:
+def walk_mailfolders(settings, mail, mailfolders):
+    for folder_id in mailfolders:
+        if not mailfolders[folder_id]["selected"]:
             continue
 
-        print(("Getting messages from server from folder: %s.") % normalize(folderID, "utf7"))
-        retries = 0
-        getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        print(("Getting messages from server from folder: %s.") % normalize(folder_id, "utf7"))
+        get_message_to_local(folder_id, mail, settings['maildir_raw'])
 
+        # retries = 0
         # try:
         # except imaplib.IMAP4_SSL.abort:
         #     if retries < 5:
         #         print(("SSL Connection Abort. Trying again (#%i).") % retries)
         #         retries += 1
-        #         mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imapPassword, settings.get('ssl', True))
-        #         mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #         mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imap_password, settings.get('ssl', True))
+        #         mailutils.get_message_to_local(folder_id, mail, settings['maildir_raw'])
         #     else:
         #         print("SSL Connection gave more than 5 errors. Not trying again")
 
 
         # if settings.get('ssl', True):
         #     try:
-        #         mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #         mailutils.get_message_to_local(folder_id, mail, settings['maildir_raw'])
         #     except imaplib.IMAP4_SSL.abort:
         #         if retries < 5:
         #             print(("SSL Connection Abort. Trying again (#%i).") % retries)
         #             retries += 1
-        #             mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imapPassword, settings.get('ssl', True))
-        #             mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #             mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imap_password, settings.get('ssl', True))
+        #             mailutils.get_message_to_local(folder_id, mail, settings['maildir_raw'])
         #         else:
         #             print("SSL Connection gave more than 5 errors. Not trying again")
         # else:
         #     try:
-        #         mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #         mailutils.get_message_to_local(folder_id, mail, settings['maildir_raw'])
         #     except imaplib.IMAP4.abort:
         #         if retries < 5:
         #             print(("Connection Abort. Trying again (#%i).") % retries)
         #             retries += 1
-        #             mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imapPassword)
-        #             mailutils.getMessageToLocalDir(folderID, mail, settings['maildir_raw'])
+        #             mail = mailutils.connectToImapMailbox(settings.get('domain'), settings.get('username'), imap_password)
+        #             mailutils.get_message_to_local(folder_id, mail, settings['maildir_raw'])
         #         else:
         #             print("Connection gave more than 5 errors. Not trying again")
 
-        print(("Done with folder: %s.") % normalize(folderID, "utf7"))
+        print(("Done with folder: %s.") % normalize(folder_id, "utf7"))
 
 
 @click.command()
@@ -97,32 +98,35 @@ def archive(config, output):
     """Initialize config."""
     assets_location = "assets"
     settings = yaml.safe_load(config)
+    current_dir = os.path.dirname(os.path.realpath(__file__))
     for setting in settings:
         setting['assets_location'] = assets_location
         setting['output'] = output
+        setting['current_dir'] = current_dir
+        setting['templates_location'] = current_dir + "/templates/"
         setting = prepare_dirs(setting)
         # print(setting)
-        mail = None
-        mailFolders = None
+        # mail = None
+        # mailFolders = None
         
-        attCount = 0
-        lastAttName = ""
-        att_count = 0
-        last_att_filename = ""
+        # attCount = 0
+        # lastAttName = ""
+        # att_count = 0
+        # last_att_filename = ""
 
         welcomeBanner()
 
-        imapPassword = setting.get('password')
-        if not imapPassword:
+        # mail_retrieve()
+        imap_password = setting.get('password')
+        if not imap_password:
             click.echo(click.style("Enter {} @ {} password".format(setting.get('username'), setting.get('domain')), fg='red'))
-            imapPassword = getpass.getpass()
+            imap_password = getpass.getpass()
 
-        mail = connectToImapMailbox(setting.get('domain'), setting.get('username'), imapPassword, setting.get('ssl', True))
+        mail = connectToImapMailbox(setting.get('domain'), setting.get('username'), imap_password, setting.get('ssl', True))
         mailfolders = getMailFolders(setting, mail)
-        printMailFolders(mailfolders)
-        walkMailFolders(setting, mail, mailfolders)
-        # printImapFolders()
-        renderIndexPage()
+        print_mailfolders(mailfolders)
+        walk_mailfolders(setting, mail, mailfolders)
+        build_templates(setting, mailfolders)
 
 if __name__ == '__main__':
     archive()

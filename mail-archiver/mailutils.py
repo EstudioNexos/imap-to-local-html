@@ -50,22 +50,22 @@ def getMailFolders(settings, mail = None, mailFolders = None):
     mailFolders = {}
     maillist, folderSeparator = getAllFolders(mail)
     count = 0
-    for folderID in maillist:
+    for folder_id in maillist:
         count += 1
 
         # TODO, if separator is part of the name, multiple levels arise (that do not exist)
-        parts = folderID.split(folderSeparator)
+        parts = folder_id.split(folderSeparator)
 
-        fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folderID, "utf7"), defaultVal="folder"))
+        fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folder_id, "utf7"), defaultVal="folder"))
 
         isSelected = False
         for selectedFolder in settings.get('folders'):
-            if re.search("^" + selectedFolder + "$", folderID):
+            if re.search("^" + selectedFolder + "$", folder_id):
                 isSelected = True
                 break
 
-        mailFolders[folderID] = {
-            "id": folderID,
+        mailFolders[folder_id] = {
+            "id": folder_id,
             "title": normalize(parts[len(parts) - 1], "utf7"),
             "parent": folderSeparator.join(parts[:-1]),
             "selected": '--all' in settings.get('folders') or isSelected,
@@ -145,7 +145,7 @@ def saveToMaildir(msg, mailFolder, maildir_raw):
         mbox.close()
 
 
-def getMessageToLocalDir(mailFolder, mail, maildir_raw):
+def get_message_to_local(mailFolder, mail, maildir_raw):
     """
     Goes over a folder and save all emails
     """
@@ -167,6 +167,8 @@ def getMessageToLocalDir(mailFolder, mail, maildir_raw):
         result, data = mail.fetch(message_id , "(RFC822)")
         raw_email = data[0][1].replace(b'\r\n', b'\n')
         maildir_folder = mailFolder.replace("/", ".")
+        # print(maildir_folder)
+        # print(maildir_raw)
         saveToMaildir(raw_email, maildir_folder, maildir_raw)
         sofar += 1
 

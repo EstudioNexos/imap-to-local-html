@@ -99,7 +99,7 @@ def renderTemplate(templateFrom, saveTo, **kwargs):
     env.filters["humansize"] = humansize
     env.filters["simplifyEmailHeader"] = simplifyEmailHeader
     env.filters["strftime"] = strftime
-    env.filters["renderFolderBreadcrump"] = renderFolderBreadcrump
+    env.filters["render_breadcrumbs"] = render_breadcrumbs
 
     template = env.from_string(templateContents)
     result = template.render(**kwargs)
@@ -119,24 +119,24 @@ def renderTemplate(templateFrom, saveTo, **kwargs):
     return result
 
 
-def renderFolderBreadcrump(folderID, linkPrefix):
+def render_breadcrumbs(folder_id, linkPrefix):
     """
     Renders a breadcrump towards a folder
     """
 
     allFolders = getMailFolders()
-    if not folderID or not folderID in allFolders:
+    if not folder_id or not folder_id in allFolders:
         return ''
 
     folderList = []
-    currentFolderID = folderID
-    while currentFolderID and currentFolderID in allFolders:
-        if allFolders[currentFolderID]["selected"]:
-            folderList.append((allFolders[currentFolderID]["title"], allFolders[currentFolderID]["link"]))
+    currentfolder_id = folder_id
+    while currentfolder_id and currentfolder_id in allFolders:
+        if allFolders[currentfolder_id]["selected"]:
+            folderList.append((allFolders[currentfolder_id]["title"], allFolders[currentfolder_id]["link"]))
         else:
-            folderList.append((allFolders[currentFolderID]["title"], None))
+            folderList.append((allFolders[currentfolder_id]["title"], None))
 
-        currentFolderID = allFolders[currentFolderID]["parent"]
+        currentfolder_id = allFolders[currentfolder_id]["parent"]
 
     folderList = folderList[::-1]
     return renderTemplate(
@@ -155,15 +155,15 @@ def renderMenu(selectedFolder = '', currentParent = '', linkPrefix = '.'):
 
     menuToShow = []
     folders = getMailFolders()
-    for folderID in folders:
-        folder = folders[folderID]
+    for folder_id in folders:
+        folder = folders[folder_id]
         if folder["parent"] != currentParent:
             continue
 
         menuToAdd = folder
         menuToAdd["children"] = renderMenu(
             selectedFolder=selectedFolder,
-            currentParent=folderID,
+            currentParent=folder_id,
             linkPrefix=linkPrefix
         )
         menuToShow.append(menuToAdd)
@@ -350,16 +350,16 @@ def printImapFolders(currentParent = '', intend = '  '):
         print("All folders")
 
     allFolders = getMailFolders()
-    for folderID in allFolders:
-        folder = allFolders[folderID]
+    for folder_id in allFolders:
+        folder = allFolders[folder_id]
         if folder["parent"] != currentParent:
             continue
 
-        if allFolders[folderID]["selected"]:
-            print("%s**%s (%s)" % (intend, allFolders[folderID]["title"], folderID))
+        if allFolders[folder_id]["selected"]:
+            print("%s**%s (%s)" % (intend, allFolders[folder_id]["title"], folder_id))
         else:
-            print("%s%s (%s)" % (intend, allFolders[folderID]["title"], folderID))
-        printImapFolders(folderID, intend + "    ")
+            print("%s%s (%s)" % (intend, allFolders[folder_id]["title"], folder_id))
+        printImapFolders(folder_id, intend + "    ")
 
 
 def returnWelcome():
@@ -465,7 +465,7 @@ def backup_mails_to_html_from_local_maildir(folder, mailsPerID):
     """
     Creates HTML files and folder index from a mailbox folder
     """
-    print("Processing folder: %s" % normalize(folderID, "utf7"), end="")
+    print("Processing folder: %s" % normalize(folder_id, "utf7"), end="")
 
     global maildir_raw
 
@@ -655,44 +655,44 @@ def backup_mails_to_html_from_local_maildir(folder, mailsPerID):
 
 returnWelcome()
 
-imapPassword = server.get('password')
-if not imapPassword:
-    imapPassword = getpass.getpass()
+imap_password = server.get('password')
+if not imap_password:
+    imap_password = getpass.getpass()
 
-mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword, server.get('ssl', True))
+mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imap_password, server.get('ssl', True))
 printImapFolders()
 
 allFolders = getMailFolders()
-for folderID in allFolders:
-    if not allFolders[folderID]["selected"]:
+for folder_id in allFolders:
+    if not allFolders[folder_id]["selected"]:
         continue
 
-    print(("Getting messages from server from folder: %s.") % normalize(folderID, "utf7"))
+    print(("Getting messages from server from folder: %s.") % normalize(folder_id, "utf7"))
     retries = 0
     if server.get('ssl', True):
         try:
-            mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
+            mailutils.get_message_to_local(folder_id, mail, maildir_raw)
         except imaplib.IMAP4_SSL.abort:
             if retries < 5:
                 print(("SSL Connection Abort. Trying again (#%i).") % retries)
                 retries += 1
-                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword, server.get('ssl', True))
-                mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
+                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imap_password, server.get('ssl', True))
+                mailutils.get_message_to_local(folder_id, mail, maildir_raw)
             else:
                 print("SSL Connection gave more than 5 errors. Not trying again")
     else:
         try:
-            mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
+            mailutils.get_message_to_local(folder_id, mail, maildir_raw)
         except imaplib.IMAP4.abort:
             if retries < 5:
                 print(("Connection Abort. Trying again (#%i).") % retries)
                 retries += 1
-                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imapPassword)
-                mailutils.getMessageToLocalDir(folderID, mail, maildir_raw)
+                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imap_password)
+                mailutils.get_message_to_local(folder_id, mail, maildir_raw)
             else:
                 print("Connection gave more than 5 errors. Not trying again")
 
-    print(("Done with folder: %s.") % normalize(folderID, "utf7"))
+    print(("Done with folder: %s.") % normalize(folder_id, "utf7"))
 
 renderIndexPage()
 removeDir("%s/inc" % maildir_result)
@@ -703,11 +703,11 @@ copyDir(inc_location, "%s/inc" % maildir_result)
 mailsPerID = {}
 print("Creating unified list..", end="")
 sys.stdout.flush()
-for folderID in allFolders:
-    if not allFolders[folderID]["selected"]:
+for folder_id in allFolders:
+    if not allFolders[folder_id]["selected"]:
         continue
 
-    local_maildir_folder = folderID.replace("/", ".")
+    local_maildir_folder = folder_id.replace("/", ".")
     local_maildir = mailbox.Maildir(os.path.join(maildir_raw), factory=None, create=True)
     try:
         maildir_folder = local_maildir.get_folder(local_maildir_folder)
@@ -752,8 +752,8 @@ for folderID in allFolders:
         if not mailsPerID[mail_id].get("folders"):
             mailsPerID[mail_id]["folders"] = []
 
-        if not folderID in mailsPerID[mail_id]["folders"]:
-            mailsPerID[mail_id]["folders"].append(folderID)
+        if not folder_id in mailsPerID[mail_id]["folders"]:
+            mailsPerID[mail_id]["folders"].append(folder_id)
 
         if not mailsPerID[mail_id].get("parent"):
             mailsPerID[mail_id]["parent"] = normalize(mail.get('In-Reply-To'), 'header')
@@ -772,8 +772,8 @@ for folderID in allFolders:
     sys.stdout.flush()
 print("Done (%d) mails" % len(mailsPerID))
 
-for folderID in allFolders:
-    if not allFolders[folderID]["selected"]:
+for folder_id in allFolders:
+    if not allFolders[folder_id]["selected"]:
         continue
 
-    backup_mails_to_html_from_local_maildir(folderID, mailsPerID)
+    backup_mails_to_html_from_local_maildir(folder_id, mailsPerID)
