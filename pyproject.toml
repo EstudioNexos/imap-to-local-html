@@ -13,10 +13,21 @@ dependencies = [
     "pyyaml (>=6.0.2,<7.0.0)",
     "jinja2 (>=3.1.5,<4.0.0)",
     "text-unidecode (>=1.3,<2.0)",
-    "chardet (>=5.2.0,<6.0.0)"
+    "chardet (>=5.2.0,<6.0.0)",
+    "click (>=8.1.8,<9.0.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+
+packages = [
+    { include = "mail-archiver" },
+]
+
+[tool.poetry.scripts]
+archive = "mail-archiver.run:archive"
+

@@ -1,5 +1,4 @@
-settings:
-  domain: imap-domain-name
+- domain: imap-domain-name
   username: login-username
   # password is optional, if not provided, it will be requested during execution
   # password: my-secret-password
