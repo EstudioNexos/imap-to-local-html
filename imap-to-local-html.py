@@ -53,7 +53,7 @@ if not server:
 
 mail = None
 mailFolders = None
-inc_location = "inc"
+inc_location = "assets"
 
 maildir = 'mailbox.%s@%s' % (server.get('username'), server.get('domain'))
 if not os.path.exists(maildir):
