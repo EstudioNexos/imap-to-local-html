@@ -1,0 +1,22 @@
+[project]
+name = "mail-archiver"
+version = "0.1.0"
+description = "A python script to backup any IMAP capable email account to a HTML archive, nicely browsable, instead of weird folders (Maildir), one huge file (mbox), only needing a web browser to view."
+authors = [
+    {name = "Remy van Elst"}
+]
+license = {text = "GPL-3.0"}
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "bs4 (>=0.0.2,<0.0.3)",
+    "pyyaml (>=6.0.2,<7.0.0)",
+    "jinja2 (>=3.1.5,<4.0.0)",
+    "text-unidecode (>=1.3,<2.0)",
+    "chardet (>=5.2.0,<6.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
