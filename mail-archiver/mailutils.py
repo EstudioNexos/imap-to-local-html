@@ -50,28 +50,30 @@ def getMailFolders(settings, mail = None, mailFolders = None):
     mailFolders = {}
     maillist, folderSeparator = getAllFolders(mail)
     count = 0
+    to_exclude = settings.get('excluded_folders',[])
     for folder_id in maillist:
-        count += 1
+        if folder_id not in to_exclude:
+            count += 1
 
-        # TODO, if separator is part of the name, multiple levels arise (that do not exist)
-        parts = folder_id.split(folderSeparator)
+            # TODO, if separator is part of the name, multiple levels arise (that do not exist)
+            parts = folder_id.split(folderSeparator)
 
-        fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folder_id, "utf7"), defaultVal="folder"))
+            fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folder_id, "utf7"), defaultVal="folder"))
 
-        isSelected = False
-        for selected_folder in settings.get('folders'):
-            if re.search("^" + selected_folder + "$", folder_id):
-                isSelected = True
-                break
+            isSelected = False
+            for selected_folder in settings.get('folders'):
+                if re.search("^" + selected_folder + "$", folder_id):
+                    isSelected = True
+                    break
 
-        mailFolders[folder_id] = {
-            "id": folder_id,
-            "title": normalize(parts[len(parts) - 1], "utf7"),
-            "parent": folderSeparator.join(parts[:-1]),
-            "selected": '--all' in settings.get('folders') or isSelected,
-            "file": fileName,
-            "link": "/%s" % fileName,
-        }
+            mailFolders[folder_id] = {
+                "id": folder_id,
+                "title": normalize(parts[len(parts) - 1], "utf7"),
+                "parent": folderSeparator.join(parts[:-1]),
+                "selected": '--all' in settings.get('folders') or isSelected,
+                "file": fileName,
+                "link": "/%s" % fileName,
+            }
 
     # Single root folders do not matter really - usually it's just "INBOX"
     # Let's see how many menus exist with no parent

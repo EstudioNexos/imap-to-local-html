@@ -112,31 +112,31 @@
   <ul class="nav nav-tabs" id="mail-content-tab" role="tablist">
     {% if mail.content.html %}
       <li class="nav-item">
-        <a class="nav-link {% if mail.content.default == 'html' %}active{% endif %}" data-toggle="tab" id="content-tab-html" href="#content-html" role="tab" aria-controls="content-html" aria-selected="false">HTML</a>
+        <a class="nav-link {% if mail.content.default == 'html' %}active{% endif %}" data-bs-toggle="tab" id="content-tab-html" href="#content-html" role="tab" aria-controls="content-html" aria-selected="false">HTML</a>
       </li>
     {% else %}
       <li class="nav-item">
-        <a class="nav-link disabled" data-toggle="tab" id="content-tab-html" href="#content-html" role="tab" aria-controls="content-html" aria-selected="false">HTML</a>
+        <a class="nav-link disabled" data-bs-toggle="tab" id="content-tab-html" href="#content-html" role="tab" aria-controls="content-html" aria-selected="false">HTML</a>
       </li>
     {% endif %}
   
     {% if mail.content.text %}
       <li class="nav-item">
-        <a class="nav-link {% if mail.content.default == 'text' %}active{% endif %}" data-toggle="tab" id="content-tab-text" href="#content-text" role="tab" aria-controls="content-text" aria-selected="false">Text</a>
+        <a class="nav-link {% if mail.content.default == 'text' %}active{% endif %}" data-bs-toggle="tab" id="content-tab-text" href="#content-text" role="tab" aria-controls="content-text" aria-selected="false">Text</a>
       </li>
     {% else %}
       <li class="nav-item">
-        <a class="nav-link disabled" data-toggle="tab" id="content-tab-text" href="#content-text" role="tab" aria-controls="content-text" aria-selected="false">Text</a>
+        <a class="nav-link disabled" data-bs-toggle="tab" id="content-tab-text" href="#content-text" role="tab" aria-controls="content-text" aria-selected="false">Text</a>
       </li>
     {% endif %}
   
     {% if mail.content.raw %}
       <li class="nav-item">
-        <a class="nav-link {% if mail.content.default == 'raw' %}active{% endif %}" data-toggle="tab" id="content-tab-raw" href="#content-raw" role="tab" aria-controls="content-raw" aria-selected="false">Raw</a>
+        <a class="nav-link {% if mail.content.default == 'raw' %}active{% endif %}" data-bs-toggle="tab" id="content-tab-raw" href="#content-raw" role="tab" aria-controls="content-raw" aria-selected="false">Raw</a>
       </li>
     {% else %}
       <li class="nav-item">
-        <a class="nav-link disabled" data-toggle="tab" id="content-tab-raw" href="#content-raw" role="tab" aria-controls="content-raw" aria-selected="false">Raw</a>
+        <a class="nav-link disabled" data-bs-toggle="tab" id="content-tab-raw" href="#content-raw" role="tab" aria-controls="content-raw" aria-selected="false">Raw</a>
       </li>
     {% endif %}
   </ul>
