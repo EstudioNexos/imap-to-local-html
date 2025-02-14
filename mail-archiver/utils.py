@@ -99,7 +99,7 @@ def normalize(unknown, encoding = None):
     return unknown
 
 
-def removeDir(src):
+def remove_dir(src):
     """
     Removes a whole directory and all its contents
     """

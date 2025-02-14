@@ -34,7 +34,7 @@ import hashlib
 import sys
 import yaml
 
-from utils import normalize, removeDir, copyDir, humansize, simplify_emailheaders, slugify_safe, strftime
+from utils import normalize, remove_dir, copyDir, humansize, simplify_emailheaders, slugify_safe, strftime
 import mailutils
 
 global server
@@ -695,7 +695,7 @@ for folder_id in allFolders:
     print(("Done with folder: %s.") % normalize(folder_id, "utf7"))
 
 renderIndexPage()
-removeDir("%s/inc" % maildir_result)
+remove_dir("%s/inc" % maildir_result)
 copyDir(inc_location, "%s/inc" % maildir_result)
 
 # We go through all folders and create a unified struct

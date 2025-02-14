@@ -1,5 +1,5 @@
 {% for folder_id in mail.folders %}
-  <div class="col-sm-12 text-right no-padding">
+  <div class="col-sm-12 text-right p-0">
     {{ folder_id|render_breadcrumbs(settings, mailfolders, link_prefix) }}
   </div>
 {% endfor %}

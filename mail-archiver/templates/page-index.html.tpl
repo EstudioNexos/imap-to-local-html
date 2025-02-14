@@ -1,9 +1,9 @@
-<label>Here is the information you gave me:</label>
-{% for info in allInfo %}
+<label>Archive information:</label>
+{% for detail in info %}
     <div class="input-group mb-3">
         <div class="input-group-prepend">
-            <span class="input-group-text" id="{{ info.title }}-span">{{ info.title }}</span>
+            <span class="input-group-text" id="{{ detail.title }}-span">{{ detail.title }}</span>
         </div>
-        <input type="text" class="form-control" id="{{ info.title }}" aria-describedby="{{ info.title }}-span" value="{{ info.value }}" disabled />
+        <input type="text" class="form-control" id="{{ detail.title }}" aria-describedby="{{ detail.title }}-span" value="{{ detail.value }}" disabled />
     </div>
 {% endfor %}

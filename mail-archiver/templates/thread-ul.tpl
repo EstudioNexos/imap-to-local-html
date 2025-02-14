@@ -3,12 +3,12 @@
         <li>
             {% if mail.link %}
                 {% if mail.selected %}
-                    <a href="{{linkPrefix}}{{ mail.link }}" data-id="{{ mail.id }}">
+                    <a href="{{link_prefix}}{{ mail.link }}" data-id="{{ mail.id }}">
                         <strong>{{ mail.subject }}</strong>
                     </a>
                     ({{ mail.date|strftime }})
                 {% else %}
-                    <a href="{{linkPrefix}}{{ mail.link }}" data-id="{{ mail.id }}">
+                    <a href="{{link_prefix}}{{ mail.link }}" data-id="{{ mail.id }}">
                         {{ mail.subject }}
                     </a>
                     ({{ mail.date|strftime }})

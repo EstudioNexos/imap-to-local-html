@@ -2,7 +2,7 @@
     {% for folderTitle, folderLink in folderList %}
         <li>
             {% if folderLink %}
-                <a href="{{ linkPrefix }}{{ folderLink }}">{{ folderTitle }}</a>
+                <a href="{{ link_prefix }}{{ folderLink }}">{{ folderTitle }}</a>
             {% else %}
                 {{ folderTitle }}
             {% endif %}

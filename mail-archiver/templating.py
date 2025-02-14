@@ -2,7 +2,7 @@ import os, sys
 import time
 import datetime
 from jinja2 import Environment
-from .utils import normalize, removeDir, copyDir, humansize, simplify_emailheaders, slugify_safe, strftime
+from .utils import normalize, remove_dir, copyDir, humansize, simplify_emailheaders, slugify_safe, strftime
 import email
 import mailbox
 from email.utils import parsedate
@@ -415,7 +415,7 @@ def render_sidemenu(settings, mailfolders, folder = '', current_parent = '', lin
     """
 
     menu = []
-    # folders = getMailFolders()
+    
     for folder_id in mailfolders:
         folder = mailfolders[folder_id]
         if folder["parent"] != current_parent:
@@ -470,6 +470,7 @@ def render_template(settings, mailfolders, template_name, save_to, **kwargs):
         contents = f.read()
 
     env = Environment()
+    
     env.filters["humansize"] = humansize
     env.filters["simplify_emailheaders"] = simplify_emailheaders
     env.filters["strftime"] = strftime
@@ -497,11 +498,12 @@ def render_page(settings, mailfolders, save_to, **kwargs):
     """
     HTML page wrapper
 
-    Expects: title, contentZ
+    Expects: title, content
     """
     kwargs['title'] = get_title(settings, kwargs.get('title'))
     kwargs['username'] = settings.get('username')
     kwargs['link_prefix'] = kwargs.get('link_prefix', '.')
+    kwargs['assets_location'] = settings.get('assets_location')
     kwargs['sidemenu'] = render_sidemenu(
         settings,
         mailfolders,
@@ -588,10 +590,10 @@ def build_struct(settings, mailfolders):
 
 def build_templates(settings, mailfolders):
     render_index(settings, mailfolders)
-    removeDir("%s/assets" % settings['maildir_result'])
-    copyDir(settings['assets_location'], "%s/assets" % settings['maildir_result'])
+    remove_dir("{}/{}".format(settings['maildir_result'], settings['assets_location']) )
+    copyDir(settings['assets_location'], "{}/{}".format(settings['maildir_result'],settings['assets_location']) )
     struct = build_struct(settings, mailfolders)
-    print(struct)
+    # print(struct)
     for folder_id in mailfolders:
         if not mailfolders[folder_id]["selected"]:
             continue
@@ -616,7 +618,7 @@ def render_index(settings, mailfolders):
         "title": "Date of backup",
         "value": str(now),
     })
-
+    # print(info)
     render_page(
         settings,
         mailfolders,

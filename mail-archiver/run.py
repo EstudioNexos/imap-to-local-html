@@ -3,7 +3,7 @@ import click
 import yaml
 import getpass
 
-# from .utils import normalize, removeDir, copyDir, humansize, simplify_emailheaders, slugify_safe, strftime
+# from .utils import normalize, remove_dir, copyDir, humansize, simplify_emailheaders, slugify_safe, strftime
 from .mailutils import *
 from .templating import build_templates
 
@@ -131,7 +131,7 @@ def archive(config, output):
         print_mailfolders(mailfolders)
         click.echo(click.style("Start walking folders", fg='blue'))
         walk_mailfolders(setting, mail, mailfolders)
-        click.echo(click.style("Star building templates", fg='blue'))
+        click.echo(click.style("Start building templates", fg='blue'))
         build_templates(setting, mailfolders)
 
 if __name__ == '__main__':

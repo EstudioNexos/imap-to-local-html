@@ -1,4 +1,5 @@
 <div>
+    {% if mails|length > 0 %}
     <table class="datatable table table-striped table-bordered">
         <thead>
             <tr>
@@ -13,17 +14,17 @@
         <tbody>
             {% for mail in mails %}
                 <tr data-id="{{ mails[mail].id }}">
-                    <td class="align-center"><span class="nobr">{{ mails[mail].date }}</span></td>
+                    <td class="text-center"><span class="text-nowrap">{{ mails[mail].date }}</span></td>
                     <td>{{ mails[mail].from|simplify_emailheaders }}</td>
                     <td>{{ mails[mail].to|simplify_emailheaders }}</td>
                     <td>
                         {% if mails[mail].error_decoding %}
                             <i class="bi bi-exclamation-octagon btn-outline-danger" title="{{ mails[mail].error_decoding }}" />
                         {% endif %}
-                        <a href="{{ linkPrefix }}{{ mails[mail].link }}">{{ mails[mail].subject|e }}</a>
+                        <a href="{{ link_prefix }}{{ mails[mail].link }}">{{ mails[mail].subject|e }}</a>
                     </td>
-                    <td class="align-right" data-order="{{ mails[mail].size }}"><span class="nobr">{{ mails[mail].size|humansize }}<span></td>
-                    <td class="align-center">
+                    <td class="text-end" data-order="{{ mails[mail].size }}"><span class="text-nowrap">{{ mails[mail].size|humansize }}<span></td>
+                    <td class="text-center">
                         {% if mails[mail].attachments %}
                             <i class="bi bi-paperclip" title="{{ mails[mail].attachments }} attachment(s)" />
                         {% endif %}
@@ -34,4 +35,7 @@
             {% endfor %}
         </tbody>
     </table>
+    {% else %}
+        <p class="alert alert-info">Folder is empty</p>
+    {% endif %}
 </div>
