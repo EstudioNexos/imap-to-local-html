@@ -7,6 +7,160 @@ import email
 import mailbox
 from email.utils import parsedate
 import hashlib
+import base64
+import re
+
+def render_thread(settings, mailfolders, struct = {}, thread_current_mail_id = '', currently_selected_mail_id = '', link_prefix = '.'):
+    """
+    Renders a thread of mails
+    """
+
+    if not thread_current_mail_id in struct:
+        return ""
+
+    mails = []
+
+    parent_id = struct[thread_current_mail_id].get("parent")
+
+    # if there is no parent, assume no other siblings
+    if not parent_id or not parent_id in struct:
+        current = {
+            "id": thread_current_mail_id,
+            "link": struct[thread_current_mail_id].get("link"),
+            "date": struct[thread_current_mail_id].get("date"),
+            "subject": struct[thread_current_mail_id].get("subject", "(mail not found)"),
+            "selected": thread_current_mail_id == currently_selected_mail_id,
+        }
+
+        mails.append(current)
+    else:
+        for sibling_id in struct[parent_id].get("children", []):
+            if not sibling_id in struct:
+                current = {
+                    "id": thread_current_mail_id,
+                    "link": None,
+                    "date": None,
+                    "subject": "(mail not found)",
+                    "selected": sibling_id == currently_selected_mail_id,
+                }
+                mails.append(current)
+                continue
+
+            current = {
+                "id": sibling_id,
+                "link": struct[sibling_id]["link"],
+                "date": struct[sibling_id]["date"],
+                "subject": struct[sibling_id]["subject"],
+                "selected": sibling_id == currently_selected_mail_id,
+            }
+
+            mails.append(current)
+
+    # For each sibling, go to first child and try to recurse
+    for pos in range(len(mails)):
+        # For some
+        if not mails[pos]["id"] in struct:
+            continue
+
+        if not struct[ mails[pos]["id"] ][ "children" ]:
+            continue
+
+        mails[pos]["children"] = render_thread(
+            settings,
+            mailfolders,
+            struct=struct,
+            thread_current_mail_id=struct[ mails[pos]["id"] ][ "children" ][0],
+            currently_selected_mail_id=currently_selected_mail_id,
+            link_prefix=link_prefix,
+        )
+
+    mails.sort(key=lambda val: val["date"])
+
+    return render_template(settings, mailfolders, "thread-ul.tpl", None, mails=mails, link_prefix=link_prefix)
+
+def get_mail_content(mail):
+    """
+    Walks mail and returns mail content
+    """
+    content_of_mail_text = ""
+    content_of_mail_html = ""
+    attachments = []
+
+    for part in mail.walk():
+        part_content_maintype = part.get_content_maintype()
+        part_content_type = part.get_content_type()
+        part_charset = part.get_charsets()
+
+        part_transfer_encoding = part.get_all("Content-Transfer-Encoding")
+        if part_transfer_encoding:
+            part_transfer_encoding = part_transfer_encoding[0]
+
+        if part_content_type in ('text/plain', 'text/html'):
+            part_decoded_contents = part.get_payload(decode=True)
+            if part_transfer_encoding is None or part_transfer_encoding == "binary":
+                part_transfer_encoding = part_charset[0]
+
+            part_decoded_contents = normalize(part_decoded_contents, part_transfer_encoding)
+
+            if part_content_type == 'text/plain':
+                content_of_mail_text += part_decoded_contents
+                continue
+
+            if part_content_type == 'text/html':
+                content_of_mail_html += part_decoded_contents
+                continue
+
+        # Attachment
+        if not part.get('Content-Disposition') is None:
+            if part.get_content_maintype() == 'multipart':
+                continue
+
+            attachment_content = part.get_payload(decode=True)
+            # Empty file?
+            if not attachment_content:
+                continue
+
+            attachment_filename_default = 'no-name-%d' % (len(attachments) + 1)
+
+            if part.get_filename():
+                attachment_filename = normalize(part.get_filename(), 'header')
+            else:
+                attachment_filename = attachment_filename_default
+
+            filename_parts = attachment_filename.split(".")
+
+            filename_ext = filename_parts[-1]
+            filename_rest = filename_parts[:-1]
+            filename_slug = "%s.%s" % (slugify_safe('.'.join(filename_rest), defaultVal=attachment_filename_default), filename_ext.lower())
+
+            attachments.append({
+                "title": attachment_filename,
+                "slug": filename_slug,
+                "filename": attachment_filename,
+                "mimetype": part_content_type,
+                "maintype": part_content_maintype,
+                "content": attachment_content,
+                "size": len(attachment_content),
+            })
+
+    if content_of_mail_text:
+        content_of_mail_text = re.sub(r"(?i)<html>.*?<head>.*?</head>.*?<body>", "", content_of_mail_text, flags=re.DOTALL)
+        content_of_mail_text = re.sub(r"(?i)</body>.*?</html>", "", content_of_mail_text, flags=re.DOTALL)
+        content_of_mail_text = re.sub(r"(?i)<!DOCTYPE.*?>", "", content_of_mail_text, flags=re.DOTALL)
+        content_of_mail_text = re.sub(r"(?i)POSITION: absolute;", "", content_of_mail_text, flags=re.DOTALL)
+        content_of_mail_text = re.sub(r"(?i)TOP: .*?;", "", content_of_mail_text, flags=re.DOTALL)
+
+
+    if content_of_mail_html:
+        content_of_mail_html = re.sub(r"(?i)<html>.*?<head>.*?</head>.*?<body>", "", content_of_mail_html, flags=re.DOTALL)
+        content_of_mail_html = re.sub(r"(?i)<base .*?>", "", content_of_mail_html, flags=re.DOTALL)
+        content_of_mail_html = re.sub(r"(?i)</body>.*?</html>", "", content_of_mail_html, flags=re.DOTALL)
+        content_of_mail_html = re.sub(r"(?i)<!DOCTYPE.*?>", "", content_of_mail_html, flags=re.DOTALL)
+        content_of_mail_html = re.sub(r"(?i)POSITION: absolute;", "", content_of_mail_html, flags=re.DOTALL)
+        content_of_mail_html = re.sub(r"(?i)TOP: .*?;", "", content_of_mail_html, flags=re.DOTALL)
+
+    return content_of_mail_text, content_of_mail_html, attachments
+
 
 def to_local(settings, mailfolders, struct, folder_id):
     """
@@ -29,8 +183,8 @@ def to_local(settings, mailfolders, struct, folder_id):
             mailfolders,
             "%s/%s" % (maildir_result, mailfolders[folder_id]["file"]),
             header_title="Folder %s" % mailfolders[folder_id]["title"],
-            linkPrefix=".",
-            selectedFolder=folder_id,
+            link_prefix=".",
+            selected_folder=folder_id,
             content=render_template(
                 settings,
                 mailfolders,
@@ -38,7 +192,7 @@ def to_local(settings, mailfolders, struct, folder_id):
                 None,
                 mails=mails,
                 link_prefix=".",
-                selectedFolder=folder_id,
+                selected_folder=folder_id
             )
         )
 
@@ -88,9 +242,9 @@ def to_local(settings, mailfolders, struct, folder_id):
         content_of_mail_text, content_of_mail_html, attachments = "", "", []
 
         try:
-            content_of_mail_text, content_of_mail_html, attachments = getMailContent(mail)
+            content_of_mail_text, content_of_mail_html, attachments = get_mail_content(mail)
         except Exception as e:
-            error_decoding += "~> Error in getMailContent: %s" % str(e)
+            error_decoding += "~> Error in get_mail_content: %s" % str(e)
 
         data_uri_to_download = ''
         try:
@@ -154,25 +308,27 @@ def to_local(settings, mailfolders, struct, folder_id):
 
         render_page(
             settings,
-            mailboxes,
+            mailfolders,
             "%s/%s" % (maildir_result, mails[mail_id]["file"]),
-            title="%s | %s" % (mail_subject, mailfolders[folder]["title"]),
+            title="%s | %s" % (mail_subject, mailfolders[folder_id]["title"]),
             header_title=mails[mail_id]["subject"],
-            linkPrefix="../../..",
-            selectedFolder=struct[mail_id]["folders"],
+            link_prefix="../../..",
+            selected_folder=struct[mail_id]["folders"],
             content=render_template(
                 settings,
-                mailboxes,
+                mailfolders,
                 "page-mail.tpl",
                 None,
                 mail=mails[mail_id],
-                linkPrefix="../../..",
-                selectedFolder=struct[mail_id]["folders"],
-                thread=renderThread(
+                link_prefix="../../..",
+                selected_folder=struct[mail_id]["folders"],
+                thread=render_thread(
+                    settings,
+                    mailfolders,
                     struct=struct,
                     thread_current_mail_id=thread_parent,
                     currently_selected_mail_id=mail_id,
-                    linkPrefix="../../..",
+                    link_prefix="../../..",
                 ),
             )
         )
@@ -192,47 +348,53 @@ def to_local(settings, mailfolders, struct, folder_id):
 
     print("    > Creating index file..", end="")
     sys.stdout.flush()
-    renderPage(
-        "%s/%s" % (maildir_result, mailfolders[folder]["file"]),
-        title="Folder %s (%d)" % (mailfolders[folder]["title"], len(mails)),
-        header_title="Folder %s (%d)" % (mailfolders[folder]["title"], len(mails)),
-        linkPrefix=".",
-        selectedFolder=folder,
-        content=renderTemplate(
+    render_page(
+        settings,
+        mailfolders,
+        "%s/%s" % (maildir_result, mailfolders[folder_id]["file"]),
+        title="Folder %s (%d)" % (mailfolders[folder_id]["title"], len(mails)),
+        header_title="Folder %s (%d)" % (mailfolders[folder_id]["title"], len(mails)),
+        link_prefix=".",
+        selected_folder=folder_id,
+        content=render_template(
+            settings,
+            mailfolders,
             "page-mail-list.tpl",
             None,
             mails=mails,
-            linkPrefix=".",
-            selectedFolder=folder,
+            link_prefix=".",
+            selected_folder=folder_id,
         )
     )
 
     print("Done!")
 
-def render_breadcrumbs(folder_id, mailfolders, link_prefix):
+def render_breadcrumbs(folder_id, settings, mailfolders, link_prefix):
     """
     Renders folder breadcrumbs
     """
 
     # mailfolders = getMailFolders()
-    if not folder_id or not folder_id in mailolders:
+    if not folder_id or not folder_id in mailfolders:
         return ''
 
-    folderList = []
+    folders = []
     currentfolder_id = folder_id
     while currentfolder_id and currentfolder_id in mailfolders:
         if mailfolders[currentfolder_id]["selected"]:
-            folderList.append((mailfolders[currentfolder_id]["title"], mailfolders[currentfolder_id]["link"]))
+            folders.append((mailfolders[currentfolder_id]["title"], mailfolders[currentfolder_id]["link"]))
         else:
-            folderList.append((mailfolders[currentfolder_id]["title"], None))
+            folders.append((mailfolders[currentfolder_id]["title"], None))
 
         currentfolder_id = mailfolders[currentfolder_id]["parent"]
 
-    folderList = folderList[::-1]
+    folders = folders[::-1]
     return render_template(
+        settings,
+        mailfolders,
         "folder-breadcrumbs.tpl",
         None,
-        folderList=folderList,
+        folders=folders,
         link_prefix=link_prefix,
     )
 
@@ -312,7 +474,8 @@ def render_template(settings, mailfolders, template_name, save_to, **kwargs):
     env.filters["simplify_emailheaders"] = simplify_emailheaders
     env.filters["strftime"] = strftime
     env.filters["render_breadcrumbs"] = render_breadcrumbs
-
+    kwargs['settings'] = settings
+    kwargs['mailfolders'] = mailfolders
     template = env.from_string(contents)
     result = template.render(**kwargs)
     if save_to:
@@ -342,7 +505,7 @@ def render_page(settings, mailfolders, save_to, **kwargs):
     kwargs['sidemenu'] = render_sidemenu(
         settings,
         mailfolders,
-        folder=kwargs.get('selectedFolder', ''),
+        folder=kwargs.get('selected_folder', ''),
         link_prefix=kwargs['link_prefix'],
     )
 

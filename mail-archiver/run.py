@@ -125,10 +125,13 @@ def archive(config, output):
             click.echo(click.style("Enter {} @ {} password".format(setting.get('username'), setting.get('domain')), fg='red'))
             imap_password = getpass.getpass()
 
+        click.echo(click.style("Connecting to server", fg='blue'))
         mail = connectToImapMailbox(setting.get('domain'), setting.get('username'), imap_password, setting.get('ssl', True))
         mailfolders = getMailFolders(setting, mail)
         print_mailfolders(mailfolders)
+        click.echo(click.style("Start walking folders", fg='blue'))
         walk_mailfolders(setting, mail, mailfolders)
+        click.echo(click.style("Star building templates", fg='blue'))
         build_templates(setting, mailfolders)
 
 if __name__ == '__main__':

@@ -119,7 +119,7 @@ def renderTemplate(templateFrom, saveTo, **kwargs):
     return result
 
 
-def render_breadcrumbs(folder_id, linkPrefix):
+def render_breadcrumbs(folder_id, link_prefix):
     """
     Renders a breadcrump towards a folder
     """
@@ -143,10 +143,10 @@ def render_breadcrumbs(folder_id, linkPrefix):
         "folder-breadcrump.tpl",
         None,
         folderList=folderList,
-        linkPrefix=linkPrefix,
+        link_prefix=link_prefix,
     )
 
-def renderMenu(selectedFolder = '', currentParent = '', linkPrefix = '.'):
+def renderMenu(selected_folder = '', currentParent = '', link_prefix = '.'):
     """
     Renders the menu on the left
 
@@ -162,9 +162,9 @@ def renderMenu(selectedFolder = '', currentParent = '', linkPrefix = '.'):
 
         menuToAdd = folder
         menuToAdd["children"] = renderMenu(
-            selectedFolder=selectedFolder,
+            selected_folder=selected_folder,
             currentParent=folder_id,
-            linkPrefix=linkPrefix
+            link_prefix=link_prefix
         )
         menuToShow.append(menuToAdd)
 
@@ -177,8 +177,8 @@ def renderMenu(selectedFolder = '', currentParent = '', linkPrefix = '.'):
         "nav-ul.tpl",
         None,
         menuToShow=menuToShow,
-        linkPrefix=linkPrefix,
-        selectedFolder=selectedFolder,
+        link_prefix=link_prefix,
+        selected_folder=selected_folder,
     )
 
 
@@ -190,10 +190,10 @@ def renderPage(saveTo, **kwargs):
     """
     kwargs['title'] = get_title(kwargs.get('title'))
     kwargs['username'] = server.get('username')
-    kwargs['linkPrefix'] = kwargs.get('linkPrefix', '.')
+    kwargs['link_prefix'] = kwargs.get('link_prefix', '.')
     kwargs['sidemenu'] = renderMenu(
-        selectedFolder=kwargs.get('selectedFolder', ''),
-        linkPrefix=kwargs['linkPrefix'],
+        selected_folder=kwargs.get('selected_folder', ''),
+        link_prefix=kwargs['link_prefix'],
     )
 
     if (kwargs.get("headerTitle")):
@@ -212,7 +212,7 @@ def renderHeader(title):
     return renderTemplate("header-main.tpl", None, title=title)
 
 
-def renderThread(mailsPerID = {}, thread_current_mail_id = '', currently_selected_mail_id = '', linkPrefix = '.'):
+def renderThread(mailsPerID = {}, thread_current_mail_id = '', currently_selected_mail_id = '', link_prefix = '.'):
     """
     Renders a thread of mails
     """
@@ -271,12 +271,12 @@ def renderThread(mailsPerID = {}, thread_current_mail_id = '', currently_selecte
             mailsPerID=mailsPerID,
             thread_current_mail_id=mailsPerID[ mailToShow[pos]["id"] ][ "children" ][0],
             currently_selected_mail_id=currently_selected_mail_id,
-            linkPrefix=linkPrefix,
+            link_prefix=link_prefix,
         )
 
     mailToShow.sort(key=lambda val: val["date"])
 
-    return renderTemplate("thread-ul.tpl", None, mailToShow=mailToShow, linkPrefix=linkPrefix)
+    return renderTemplate("thread-ul.tpl", None, mailToShow=mailToShow, link_prefix=link_prefix)
 
 
 
@@ -331,12 +331,12 @@ def renderIndexPage():
     renderPage(
         "%s/%s" % (maildir_result, "index.html"),
         headerTitle="Email Backup index page",
-        linkPrefix=".",
+        link_prefix=".",
         content=renderTemplate(
             "page-index.html.tpl",
             None,
             allInfo=allInfo,
-            linkPrefix=".",
+            link_prefix=".",
         )
     )
 
@@ -479,14 +479,14 @@ def backup_mails_to_html_from_local_maildir(folder, mailsPerID):
         renderPage(
             "%s/%s" % (maildir_result, mailFolders[folder]["file"]),
             headerTitle="Folder %s" % mailFolders[folder]["title"],
-            linkPrefix=".",
-            selectedFolder=folder,
+            link_prefix=".",
+            selected_folder=folder,
             content=renderTemplate(
                 "page-mail-list.tpl",
                 None,
                 mails=mails,
-                linkPrefix=".",
-                selectedFolder=folder,
+                link_prefix=".",
+                selected_folder=folder,
             )
         )
 
@@ -604,19 +604,19 @@ def backup_mails_to_html_from_local_maildir(folder, mailsPerID):
             "%s/%s" % (maildir_result, mails[mail_id]["file"]),
             title="%s | %s" % (mail_subject, mailFolders[folder]["title"]),
             headerTitle=mails[mail_id]["subject"],
-            linkPrefix="../../..",
-            selectedFolder=mailsPerID[mail_id]["folders"],
+            link_prefix="../../..",
+            selected_folder=mailsPerID[mail_id]["folders"],
             content=renderTemplate(
                 "page-mail.tpl",
                 None,
                 mail=mails[mail_id],
-                linkPrefix="../../..",
-                selectedFolder=mailsPerID[mail_id]["folders"],
+                link_prefix="../../..",
+                selected_folder=mailsPerID[mail_id]["folders"],
                 thread=renderThread(
                     mailsPerID=mailsPerID,
                     thread_current_mail_id=thread_parent,
                     currently_selected_mail_id=mail_id,
-                    linkPrefix="../../..",
+                    link_prefix="../../..",
                 ),
             )
         )
@@ -640,14 +640,14 @@ def backup_mails_to_html_from_local_maildir(folder, mailsPerID):
         "%s/%s" % (maildir_result, mailFolders[folder]["file"]),
         title="Folder %s (%d)" % (mailFolders[folder]["title"], len(mails)),
         headerTitle="Folder %s (%d)" % (mailFolders[folder]["title"], len(mails)),
-        linkPrefix=".",
-        selectedFolder=folder,
+        link_prefix=".",
+        selected_folder=folder,
         content=renderTemplate(
             "page-mail-list.tpl",
             None,
             mails=mails,
-            linkPrefix=".",
-            selectedFolder=folder,
+            link_prefix=".",
+            selected_folder=folder,
         )
     )
 

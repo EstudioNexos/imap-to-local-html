@@ -1,6 +1,6 @@
 {% for folder_id in mail.folders %}
   <div class="col-sm-12 text-right no-padding">
-    {{ folder_id|render_breadcrumbs(linkPrefix) }}
+    {{ folder_id|render_breadcrumbs(settings, mailfolders, link_prefix) }}
   </div>
 {% endfor %}
 
@@ -52,7 +52,7 @@
           <strong>Reply to:</strong>
         </div>
         <div class="col-md-9">
-          <a href="{{ linkPrefix }}{{ mail.replyTo.link }}">{{ mail.replyTo.subject }}</a>
+          <a href="{{ link_prefix }}{{ mail.replyTo.link }}">{{ mail.replyTo.subject }}</a>
         </div>
       </div>
     </li>
@@ -88,7 +88,7 @@
         <div class="col-md-9">
           <ol class="attachments">
             {% for attachment in mail.attachments %}
-              <li><a href="{{ linkPrefix }}/{{ attachment.link }}" target="_blank">{{ attachment.title }}</a> ({{ attachment.size|humansize }}, {{ attachment.mimetype }})</li>
+              <li><a href="{{ link_prefix }}/{{ attachment.link }}" target="_blank">{{ attachment.title }}</a> ({{ attachment.size|humansize }}, {{ attachment.mimetype }})</li>
             {% endfor %}
           </ol>
         </div>

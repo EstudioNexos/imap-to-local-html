@@ -59,8 +59,8 @@ def getMailFolders(settings, mail = None, mailFolders = None):
         fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folder_id, "utf7"), defaultVal="folder"))
 
         isSelected = False
-        for selectedFolder in settings.get('folders'):
-            if re.search("^" + selectedFolder + "$", folder_id):
+        for selected_folder in settings.get('folders'):
+            if re.search("^" + selected_folder + "$", folder_id):
                 isSelected = True
                 break
 
