@@ -166,7 +166,7 @@ def to_local(settings, mailfolders, struct, folder_id):
     """
     Creates HTML files and folder index from a mailbox folder
     """
-    print(folder_id)
+    # print(folder_id)
     print("Processing folder: %s" % normalize(folder_id, "utf7"), end="")
 
     maildir_raw = settings['maildir_raw']
@@ -413,9 +413,11 @@ def render_sidemenu(settings, mailfolders, folder = '', current_parent = '', lin
 
     Expects: selected folder (id), current_parent (for recursion)
     """
-
+    selected_folder = folder
     menu = []
-    
+    # print("--->")
+    # print(folder)
+    # print("<---")
     for folder_id in mailfolders:
         folder = mailfolders[folder_id]
         if folder["parent"] != current_parent:
@@ -426,6 +428,7 @@ def render_sidemenu(settings, mailfolders, folder = '', current_parent = '', lin
             settings,
             mailfolders,
             folder=folder,
+            # selected_folder=selected_folder,
             current_parent=folder_id,
             link_prefix=link_prefix
         )
@@ -443,7 +446,7 @@ def render_sidemenu(settings, mailfolders, folder = '', current_parent = '', lin
         None,
         menu=menu,
         link_prefix=link_prefix,
-        folder=folder,
+        selected_folder=selected_folder,
     )
 
 def get_title(settings, title = None):
