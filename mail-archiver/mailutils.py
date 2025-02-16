@@ -18,32 +18,27 @@ def extract_date(email):
 
 def imap_connect( IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
     """
-    Connects to remote server
+    Connect to remote server
     """
     if IMAP_SSL is True:
-        mail = imaplib.IMAP4_SSL(IMAP_SERVER)
+        connection = imaplib.IMAP4_SSL(IMAP_SERVER)
     else:
-        mail = imaplib.IMAP4(IMAP_SERVER)
+        connection = imaplib.IMAP4(IMAP_SERVER)
     if IMAP_SSL == 'starttls':
         mail.starttls()
-    # print(IMAP_SERVER)
-    # print(IMAP_USERNAME)
-    # print(IMAP_PASSWORD)
-    mail.login(IMAP_USERNAME, IMAP_PASSWORD)
+    connection.login(IMAP_USERNAME, IMAP_PASSWORD)
 
     try:
-        mail.enable("UTF8=ACCEPT")
+        connection.enable("UTF8=ACCEPT")
     except Exception as e:
         print("Server does not accept UTF8=ACCEPT")
 
-    return mail
+    return connection
 
-def get_mail_folders(settings, mail = None, mail_folders = None):
+def get_mail_folders(settings, connection = None, mail_folders = None):
     """
     Returns mail folders
     """
-    # global mail_folders
-    # global server
 
     if not mail_folders is None:
         return mail_folders
@@ -52,7 +47,7 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
         return mail_folders
 
     mail_folders = {}
-    maillist, folderSeparator = getAllFolders(mail)
+    maillist, folder_separator = get_all_folders(connection)
     count = 0
     to_exclude = settings.get('excluded_folders',[])
     for folder_id in maillist:
@@ -61,7 +56,7 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
             count += 1
 
             # TODO, if separator is part of the name, multiple levels arise (that do not exist)
-            parts = folder_id.split(folderSeparator)
+            parts = folder_id.split(folder_separator)
 
             fileName = "%03d-%s.html" % (count, slugify_safe(normalize(folder_id, "utf7"), defaultVal="folder"))
 
@@ -74,12 +69,12 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
             mail_folders[folder_id] = {
                 "id": folder_id,
                 "title": normalize(parts[len(parts) - 1], "utf7"),
-                "parent": folderSeparator.join(parts[:-1]),
+                "parent": folder_separator.join(parts[:-1]),
                 "selected": '--all' in settings.get('folders') or isSelected,
                 "file": fileName,
                 "link": "/%s" % fileName,
             }
-    # print(mail_folders)
+
     # Single root folders do not matter really - usually it's just "INBOX"
     # Let's see how many menus exist with no parent
     menusWithNoParent = []
@@ -99,33 +94,30 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
     # print(mail_folders)
     return mail_folders
 
-def getAllFolders(connection):
+def get_all_folders(connection):
     """
     Returns all folders from remote server
     """
     folder_list = []
-    folderSeparator = None
-
+    folder_separator = None
     maillist = connection.list()
-    
     if not maillist or not maillist[0].lower() == 'ok':
         print("Unable to retrieve folder list")
-        return folder_list, folderSeparator
 
-    for folderLine in maillist[1]:
-        folderLine = folderLine.decode()
-        parts = re.findall("(\(.*\)) \"(.)\" (.*)", folderLine)
-    
+        return folder_list, folder_separator
+    for folder_line in maillist[1]:
+        folder_line = folder_line.decode()
+        parts = re.findall("(\(.*\)) \"(.)\" (.*)", folder_line)    
         if not parts:
-            print("Unable to decode filder structure: %s" % folderLine)
+            print("Unable to decode filder structure: %s" % folder_line)
             continue
 
         folder_list.append(parts[0][2].strip().strip('"'))
 
-        if not folderSeparator:
-            folderSeparator = parts[0][1]
-    # print(folder_list)
-    return folder_list, folderSeparator
+        if not folder_separator:
+            folder_separator = parts[0][1]
+
+    return folder_list, folder_separator
 
 
 def saveToMaildir(msg, mail_folder, maildir_raw):
