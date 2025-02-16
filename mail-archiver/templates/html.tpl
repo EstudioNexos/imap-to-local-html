@@ -7,7 +7,7 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{link_prefix}}/{{assets_location}}bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="{{link_prefix}}/{{assets_location}}bootstrap-icons/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{link_prefix}}/{{assets_location}}bootstrap-icons-1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{{link_prefix}}/{{assets_location}}css/dashboard.css">
     <link rel="stylesheet" href="{{link_prefix}}/{{assets_location}}datatables/datatables.min.css">
 

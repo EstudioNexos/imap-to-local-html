@@ -48,7 +48,7 @@ def print_mailfolders(allFolders, currentParent = '', intend = '  '):
         print_mailfolders(allFolders, folder_id, intend + "    ")
 
 def walk_mailfolders(settings, mail, mailfolders):
-    db = TinyDB('db.json')
+    db = TinyDB('db.json')   
     for folder_id in mailfolders:
         if not mailfolders[folder_id]["selected"]:
             continue
@@ -127,9 +127,11 @@ def archive(config, output):
             click.echo(click.style("Enter {} @ {} password".format(setting.get('username'), setting.get('domain')), fg='red'))
             imap_password = getpass.getpass()
 
-        click.echo(click.style("Connecting to server", fg='blue'))
+        click.echo(click.style("Connecting to Server {}".format(setting.get('domain')), fg='blue'))
+        click.echo(click.style("IMAP Account {}".format(setting.get('username')), fg='blue'))
         mail = connectToImapMailbox(setting.get('domain'), setting.get('username'), imap_password, setting.get('ssl', True))
         mailfolders = get_mail_folders(setting, mail)
+        # print(mailfolders)
         print_mailfolders(mailfolders)
         click.echo(click.style("Start walking folders", fg='blue'))
         walk_mailfolders(setting, mail, mailfolders)

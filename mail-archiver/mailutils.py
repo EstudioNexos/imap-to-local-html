@@ -57,6 +57,7 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
     to_exclude = settings.get('excluded_folders',[])
     for folder_id in maillist:
         if folder_id not in to_exclude:
+            # print(folder_id)
             count += 1
 
             # TODO, if separator is part of the name, multiple levels arise (that do not exist)
@@ -78,7 +79,7 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
                 "file": fileName,
                 "link": "/%s" % fileName,
             }
-
+    # print(mail_folders)
     # Single root folders do not matter really - usually it's just "INBOX"
     # Let's see how many menus exist with no parent
     menusWithNoParent = []
@@ -88,42 +89,43 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
 
     # None found or more than one, go home
     if len(menusWithNoParent) == 1:
-        # We remove it
-        del mail_folders[menusWithNoParent[0]]
+        # We remove it - Why???
+        # del mail_folders[menusWithNoParent[0]]
 
         # We change fatherhood for all children
         for menu in mail_folders:
             if mail_folders[menu]["parent"] == menusWithNoParent[0]:
                 mail_folders[menu]["parent"] = ""
-
+    # print(mail_folders)
     return mail_folders
 
 def getAllFolders(mail):
     """
     Returns all folders from remote server
     """
-    folderList = []
-    folderSeparator = ''
+    folder_list = []
+    folderSeparator = None
 
     maillist = mail.list()
+    
     if not maillist or not maillist[0].lower() == 'ok':
         print("Unable to retrieve folder list")
-        return folderList, folderSeparator
+        return folder_list, folderSeparator
 
     for folderLine in maillist[1]:
         folderLine = folderLine.decode()
         parts = re.findall("(\(.*\)) \"(.)\" (.*)", folderLine)
-
+    
         if not parts:
             print("Unable to decode filder structure: %s" % folderLine)
             continue
 
-        folderList.append(parts[0][2].strip().strip('"'))
+        folder_list.append(parts[0][2].strip().strip('"'))
 
         if not folderSeparator:
             folderSeparator = parts[0][1]
-
-    return folderList, folderSeparator
+    # print(folder_list)
+    return folder_list, folderSeparator
 
 
 def saveToMaildir(msg, mail_folder, maildir_raw):
@@ -190,9 +192,13 @@ def get_message_to_local(mail_folder, mail, settings):
             # print(message_id)
             find = db.search((Msg.message_id == message_id) & (Msg.mail_folder == mail_folder))
             if len(find) == 0:
-                print("To download")
-                db.insert({'message_id': message_id, 'mail_folder': mail_folder})
-                saveToMaildir(raw_email, maildir_folder, maildir_raw)
+                subject = headers['Subject']
+                if '* SPAM *' not in subject:
+                    print("To download")
+                    db.insert({'message_id': message_id, 'mail_folder': mail_folder})
+                    saveToMaildir(raw_email, maildir_folder, maildir_raw)
+                else:
+                    print("Subject contains spam")
             else:
                 print("Already exists")
                 
