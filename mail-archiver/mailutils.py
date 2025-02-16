@@ -1,12 +1,16 @@
 from email.header import decode_header
 from email.utils import parsedate
+from email.parser import Parser
+from email.policy import default
 import imaplib
 import mailbox
 import re
 import sys
 import time
+from tinydb import TinyDB, Query
 
-from .utils import normalize, slugify_safe
+
+from .utils import normalize, slugify_safe, detect_encoding
 
 def extract_date(email):
     date = email.get('Date')
@@ -22,9 +26,9 @@ def connectToImapMailbox( IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
         mail = imaplib.IMAP4(IMAP_SERVER)
     if IMAP_SSL == 'starttls':
         mail.starttls()
-    print(IMAP_SERVER)
-    print(IMAP_USERNAME)
-    print(IMAP_PASSWORD)
+    # print(IMAP_SERVER)
+    # print(IMAP_USERNAME)
+    # print(IMAP_PASSWORD)
     mail.login(IMAP_USERNAME, IMAP_PASSWORD)
 
     try:
@@ -34,20 +38,20 @@ def connectToImapMailbox( IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
 
     return mail
 
-def getMailFolders(settings, mail = None, mailFolders = None):
+def get_mail_folders(settings, mail = None, mail_folders = None):
     """
     Returns mail folders
     """
-    # global mailFolders
+    # global mail_folders
     # global server
 
-    if not mailFolders is None:
-        return mailFolders
+    if not mail_folders is None:
+        return mail_folders
 
     if not mail:
-        return mailFolders
+        return mail_folders
 
-    mailFolders = {}
+    mail_folders = {}
     maillist, folderSeparator = getAllFolders(mail)
     count = 0
     to_exclude = settings.get('excluded_folders',[])
@@ -66,7 +70,7 @@ def getMailFolders(settings, mail = None, mailFolders = None):
                     isSelected = True
                     break
 
-            mailFolders[folder_id] = {
+            mail_folders[folder_id] = {
                 "id": folder_id,
                 "title": normalize(parts[len(parts) - 1], "utf7"),
                 "parent": folderSeparator.join(parts[:-1]),
@@ -78,21 +82,21 @@ def getMailFolders(settings, mail = None, mailFolders = None):
     # Single root folders do not matter really - usually it's just "INBOX"
     # Let's see how many menus exist with no parent
     menusWithNoParent = []
-    for menu in mailFolders:
-        if mailFolders[menu]["parent"] == "":
+    for menu in mail_folders:
+        if mail_folders[menu]["parent"] == "":
             menusWithNoParent.append(menu)
 
     # None found or more than one, go home
     if len(menusWithNoParent) == 1:
         # We remove it
-        del mailFolders[menusWithNoParent[0]]
+        del mail_folders[menusWithNoParent[0]]
 
         # We change fatherhood for all children
-        for menu in mailFolders:
-            if mailFolders[menu]["parent"] == menusWithNoParent[0]:
-                mailFolders[menu]["parent"] = ""
+        for menu in mail_folders:
+            if mail_folders[menu]["parent"] == menusWithNoParent[0]:
+                mail_folders[menu]["parent"] = ""
 
-    return mailFolders
+    return mail_folders
 
 def getAllFolders(mail):
     """
@@ -122,12 +126,12 @@ def getAllFolders(mail):
     return folderList, folderSeparator
 
 
-def saveToMaildir(msg, mailFolder, maildir_raw):
+def saveToMaildir(msg, mail_folder, maildir_raw):
     """
     Saves a single email to local clone
     """
     mbox = mailbox.Maildir(maildir_raw, factory=mailbox.MaildirMessage, create=True) 
-    folder = mbox.add_folder(mailFolder)    
+    folder = mbox.add_folder(mail_folder)
     folder.lock()
     try:
         message_key = folder.add(msg)
@@ -147,31 +151,54 @@ def saveToMaildir(msg, mailFolder, maildir_raw):
         mbox.close()
 
 
-def get_message_to_local(mailFolder, mail, maildir_raw):
+
+
+def get_message_to_local(mail_folder, mail, settings):
     """
     Goes over a folder and save all emails
     """
-    print("Selecting folder %s" % normalize(mailFolder, "utf7"), end="")
-    mail.select(mail._quote(mailFolder), readonly=True)
+    maildir_raw = settings['maildir_raw']
+    db =  TinyDB(settings['db'])
+    print("Selecting folder %s" % normalize(mail_folder, "utf7"), end="")
+    mail.select(mail._quote(mail_folder), readonly=True)
     print("..Done!")
 
     try:
         typ, mdata = mail.search(None, "ALL")
     except Exception as imaperror:
         print("Error in IMAP Query: %s." % imaperror)
-        print("Does the imap folder \"%s\" exists?" % mailFolder)
+        print("Does the imap folder \"%s\" exists?" % mail_folder)
         return
 
-    messageList = mdata[0].decode().split()
+    message_list = mdata[0].decode().split()
     sofar = 0
-    print("Copying folder %s (%s)" % (normalize(mailFolder, "utf7"), len(messageList)), end="")
-    for message_id in messageList:
+    print("Copying folder %s (%s)" % (normalize(mail_folder, "utf7"), len(message_list)), end="")
+    Msg = Query()
+    for message_id in message_list:
+        # print(message_id)
         result, data = mail.fetch(message_id , "(RFC822)")
+        # print(data)
         raw_email = data[0][1].replace(b'\r\n', b'\n')
-        maildir_folder = mailFolder.replace("/", ".")
+        maildir_folder = mail_folder.replace("/", ".")
         # print(maildir_folder)
         # print(maildir_raw)
-        saveToMaildir(raw_email, maildir_folder, maildir_raw)
+        encoding = detect_encoding(raw_email)
+        try:
+            headers = Parser(policy=default).parsestr( raw_email.decode(encoding) )
+            # mmm = mailbox.MaildirMessage(message=raw_email)
+            message_id = headers['Message-ID']
+            # print(message_id)
+            find = db.search((Msg.message_id == message_id) & (Msg.mail_folder == mail_folder))
+            if len(find) == 0:
+                print("To download")
+                db.insert({'message_id': message_id, 'mail_folder': mail_folder})
+                saveToMaildir(raw_email, maildir_folder, maildir_raw)
+            else:
+                print("Already exists")
+                
+        except:
+            # print(raw_email)
+            pass
         sofar += 1
 
         if sofar % 10 == 0:

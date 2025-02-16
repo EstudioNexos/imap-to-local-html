@@ -24,6 +24,7 @@ def prepare_dirs(settings):
     settings['maildir_result'] = "%s/html" % settings['maildir']
     if not os.path.exists(settings['maildir_result']):
         os.mkdir(settings['maildir_result'])
+    settings['db'] = "%s/db.json" % settings['maildir']
 
     return settings
 
@@ -47,12 +48,13 @@ def print_mailfolders(allFolders, currentParent = '', intend = '  '):
         print_mailfolders(allFolders, folder_id, intend + "    ")
 
 def walk_mailfolders(settings, mail, mailfolders):
+    db = TinyDB('db.json')
     for folder_id in mailfolders:
         if not mailfolders[folder_id]["selected"]:
             continue
 
         print(("Getting messages from server from folder: %s.") % normalize(folder_id, "utf7"))
-        get_message_to_local(folder_id, mail, settings['maildir_raw'])
+        get_message_to_local(folder_id, mail, settings)
 
         # retries = 0
         # try:
@@ -127,7 +129,7 @@ def archive(config, output):
 
         click.echo(click.style("Connecting to server", fg='blue'))
         mail = connectToImapMailbox(setting.get('domain'), setting.get('username'), imap_password, setting.get('ssl', True))
-        mailfolders = getMailFolders(setting, mail)
+        mailfolders = get_mail_folders(setting, mail)
         print_mailfolders(mailfolders)
         click.echo(click.style("Start walking folders", fg='blue'))
         walk_mailfolders(setting, mail, mailfolders)

@@ -10,6 +10,20 @@ import shutil
 from slugify import slugify
 from email.header import decode_header
 
+import chardet
+
+def detect_encoding(byte_string):
+    # with open(file_path, 'rb') as file:
+
+    # detector = chardet.universaldetector.UniversalDetector()
+    # for line in byte_string:
+    #     detector.feed(line)
+    #     if detector.done:
+    #         break
+    #     detector.close()
+    detector = chardet.detect(byte_string)
+    
+    return detector['encoding']
 
 def b64padanddecode(b):
     """
