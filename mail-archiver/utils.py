@@ -162,7 +162,7 @@ def simplify_emailheaders(header):
             continue
 
         already.append(mail[0])
-        toReplace = '<i class="bi bi-envelope-fill" title="%s"></i><span class="hide">%s</span>' % (mail[1], mail[1])
+        toReplace = '<span class="bi bi-envelope me-2" title="{}"></span><span class="text-secondary">{}</span>'.format(mail[1], mail[1])
 
         result = result.replace(mail[0], toReplace)
         rest = rest.replace(mail[0], '').strip().strip(",").strip()

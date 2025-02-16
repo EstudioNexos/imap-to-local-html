@@ -16,7 +16,7 @@ def extract_date(email):
     date = email.get('Date')
     return parsedate(date)
 
-def connectToImapMailbox( IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
+def imap_connect( IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD, IMAP_SSL):
     """
     Connects to remote server
     """
@@ -99,14 +99,14 @@ def get_mail_folders(settings, mail = None, mail_folders = None):
     # print(mail_folders)
     return mail_folders
 
-def getAllFolders(mail):
+def getAllFolders(connection):
     """
     Returns all folders from remote server
     """
     folder_list = []
     folderSeparator = None
 
-    maillist = mail.list()
+    maillist = connection.list()
     
     if not maillist or not maillist[0].lower() == 'ok':
         print("Unable to retrieve folder list")
@@ -152,21 +152,18 @@ def saveToMaildir(msg, mail_folder, maildir_raw):
         folder.close()
         mbox.close()
 
-
-
-
-def get_message_to_local(mail_folder, mail, settings):
+def get_message_to_local(mail_folder, connection, settings):
     """
     Goes over a folder and save all emails
     """
     maildir_raw = settings['maildir_raw']
     db =  TinyDB(settings['db'])
     print("Selecting folder %s" % normalize(mail_folder, "utf7"), end="")
-    mail.select(mail._quote(mail_folder), readonly=True)
+    connection.select(connection._quote(mail_folder), readonly=True)
     print("..Done!")
 
     try:
-        typ, mdata = mail.search(None, "ALL")
+        typ, mdata = connection.search(None, "ALL")
     except Exception as imaperror:
         print("Error in IMAP Query: %s." % imaperror)
         print("Does the imap folder \"%s\" exists?" % mail_folder)
@@ -177,13 +174,9 @@ def get_message_to_local(mail_folder, mail, settings):
     print("Copying folder %s (%s)" % (normalize(mail_folder, "utf7"), len(message_list)), end="")
     Msg = Query()
     for message_id in message_list:
-        # print(message_id)
-        result, data = mail.fetch(message_id , "(RFC822)")
-        # print(data)
+        result, data = connection.fetch(message_id , "(RFC822)")
         raw_email = data[0][1].replace(b'\r\n', b'\n')
         maildir_folder = mail_folder.replace("/", ".")
-        # print(maildir_folder)
-        # print(maildir_raw)
         encoding = detect_encoding(raw_email)
         try:
             headers = Parser(policy=default).parsestr( raw_email.decode(encoding) )
@@ -196,7 +189,7 @@ def get_message_to_local(mail_folder, mail, settings):
                 if '* SPAM *' not in subject:
                     print("To download")
                     db.insert({'message_id': message_id, 'mail_folder': mail_folder})
-                    saveToMaildir(raw_email, maildir_folder, maildir_raw)
+                    saveToMaildir(raw_econnection, maildir_folder, maildir_raw)
                 else:
                     print("Subject contains spam")
             else:

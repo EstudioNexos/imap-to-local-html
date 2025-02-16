@@ -659,7 +659,7 @@ imap_password = server.get('password')
 if not imap_password:
     imap_password = getpass.getpass()
 
-mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imap_password, server.get('ssl', True))
+mail = mailutils.imap_connect(server.get('domain'), server.get('username'), imap_password, server.get('ssl', True))
 printImapFolders()
 
 allFolders = getMailFolders()
@@ -671,24 +671,24 @@ for folder_id in allFolders:
     retries = 0
     if server.get('ssl', True):
         try:
-            mailutils.get_message_to_local(folder_id, mail, maildir_raw)
+            mailutils.get_message_to_local(folder_id, connection, maildir_raw)
         except imaplib.IMAP4_SSL.abort:
             if retries < 5:
                 print(("SSL Connection Abort. Trying again (#%i).") % retries)
                 retries += 1
-                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imap_password, server.get('ssl', True))
-                mailutils.get_message_to_local(folder_id, mail, maildir_raw)
+                mail = mailutils.imap_connect(server.get('domain'), server.get('username'), imap_password, server.get('ssl', True))
+                mailutils.get_message_to_local(folder_id, connection, maildir_raw)
             else:
                 print("SSL Connection gave more than 5 errors. Not trying again")
     else:
         try:
-            mailutils.get_message_to_local(folder_id, mail, maildir_raw)
+            mailutils.get_message_to_local(folder_id, connection, maildir_raw)
         except imaplib.IMAP4.abort:
             if retries < 5:
                 print(("Connection Abort. Trying again (#%i).") % retries)
                 retries += 1
-                mail = mailutils.connectToImapMailbox(server.get('domain'), server.get('username'), imap_password)
-                mailutils.get_message_to_local(folder_id, mail, maildir_raw)
+                mail = mailutils.imap_connect(server.get('domain'), server.get('username'), imap_password)
+                mailutils.get_message_to_local(folder_id, connection, maildir_raw)
             else:
                 print("Connection gave more than 5 errors. Not trying again")
 
